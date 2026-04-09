@@ -116,3 +116,74 @@ C'est ici que le moteur de vision par ordinateur entre en scène.
 * **Interactivité :** C'est sur cette page que l'utilisateur peut effectuer les corrections manuelles (annotations) et voir les rectangles de détection s'afficher sur les bateaux identifiés.
 
 ---
+## 🧠 Plan détaillé de l’algorithme
+
+### Introduction de la méthode
+Le projet repose sur une approche de vision par ordinateur hybride : nous combinons un algorithme d'apprentissage non supervisé (**K-Means**) avec des techniques de filtrage spatial et morphologique.
+
+---
+
+## Étape 1 : Définition de la Zone d'Intérêt (ROI)
+
+Pour optimiser le traitement et éviter les erreurs dues au décor (ciel, côtes, pontons), l'algorithme ne travaille pas sur toute l'image.
+
+- **Le principe :** On définit un rectangle horizontal qui correspond uniquement à la surface de l'eau.  
+- **L'avantage :** Cela réduit drastiquement le "bruit" visuel et permet à l'IA de se concentrer sur les contrastes entre l'eau et les objets flottants.
+
+---
+
+## Étape 2 : Segmentation par K-Means
+
+C'est l'étape de simplification mathématique.
+
+- **La logique :** On demande à l'algorithme de regrouper les pixels de la zone en K groupes (clusters) de couleurs.  
+
+- **L'analyse du "Bleu" :** Parmi ces groupes, l'un d'eux va majoritairement représenter l'eau (la couleur dominante, bleue ou grise). Un autre groupe représente les objets clairs (blancs ou métalliques).  
+
+- **Binarisation :** Une fois les clusters identifiés, on crée un masque noir et blanc.  
+  Tout ce qui ressemble au "cluster bleu" de l'eau est transformé en noir (supprimé).  
+  Tout ce qui tranche avec ce bleu devient blanc (candidat à la détection).
+
+---
+
+## Étape 3 : Filtrage et Nettoyage Morphologique
+
+À ce stade, l'image contient encore des erreurs (reflets de soleil, écume).
+
+- **Opérations de morphologie :**  
+  On utilise des fonctions de **dilatation** et d'**érosion**.  
+
+  - La dilatation permet de "souder" les morceaux d'un même bateau qui auraient été séparés  
+  - L'érosion permet d'effacer les tous petits points blancs isolés qui ne sont que du bruit  
+
+- **L'objectif :** Obtenir des taches blanches pleines et nettes sur un fond noir parfait.
+
+---
+
+## Étape 4 : Détection de contours et Analyse de surface
+
+L'ordinateur va maintenant transformer ces taches en objets identifiés.
+
+- **Extraction des contours :**  
+  On utilise un algorithme qui convient aux frontières des zones blanches pour en calculer la surface et les coordonnées.  
+
+- **Filtrage par taille :**  
+  Pour chaque forme trouvée, on vérifie sa dimension.  
+  Si elle est trop petite pour être un bateau (selon un seuil que nous avons défini), elle est rejetée.  
+
+➡️ C'est le filtrage final du bruit.
+
+---
+
+## Étape 5 : Marquage et Localisation (Bounding Boxes)
+
+Dernière étape technique : la matérialisation.
+
+- **Encadrement :**  
+  Pour chaque objet validé, on calcule le rectangle englobant (**Bounding Box**).  
+
+- **Positionnement :**  
+  On récupère les coordonnées du centre de chaque rectangle pour confirmer que l'objet est bien situé dans la zone de l'eau.  
+
+- **Résultat :**  
+  L'algorithme renvoie le nombre exact d'objets détectés et leurs positions précises.
